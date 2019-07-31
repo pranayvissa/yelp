@@ -1,17 +1,29 @@
 #!/usr/bin/python
 
+from __future__ import print_function
+
 import requests
 import argparse
 import sys
 import os
 import urllib
 
-from urllib import quote
-
 script_dir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(script_dir+"/inc")
 
-from constants import *
+API_KEY = 'LauOYSu4b1p9NpsDjYaSVsq-vezHUKm_6l0Ne46oxGTaUYSzqaT-9o4KPFSGwyzFel_3EBk3oQqJBcFRIbaHp-kXVoKUL-tZQByhVn71buU8-x-9UktUVrupN9FAXXYx'
+CLIENT_ID = 'S6VpuasaZLqlmTFRpH5F2A'
+
+# API constants. Should not need to change these.
+API_HOST = 'https://api.yelp.com'
+SEARCH_PATH = '/v3/businesses/search'
+BUSINESS_PATH = '/v3/businesses/'  # Business ID will come after slash.
+
+
+DEFAULT_LOCATION = 'San Jose, CA'
+DEFAULT_TERM = 'dinner'
+
+SEARCH_LIMIT = 3
 
 
 def request(host, path, api_key, url_params=None):
@@ -30,7 +42,7 @@ def request(host, path, api_key, url_params=None):
         HTTPError: An error occurs from the HTTP request.
     """
     url_params = url_params or {}
-    url = '{0}{1}'.format(host, quote(path.encode('utf8')))
+    url = '{0}{1}'.format(host, urllib.quote(path.encode('utf8')))
     headers = {
         'Authorization': 'Bearer %s' % api_key,
     }
@@ -62,7 +74,36 @@ def search(term, location):
 
 
 def main(args):
-    info = search(args.term, args.location)
+    rc = 0
+    term = args.term
+    location = args.location
+
+    info = search(term, location)
+
+    businesses = info.get('businesses')
+
+    if not businesses:
+        print(u'No businesses for {0} in {1} found.'.format(term, location))
+        rc = 1
+        return rc
+
+    print('%20s, %10s, %10s, %10s, %60s, %15s' % ("Name", "Rating", "Review Count", "Price", "Address", "Closed"))
+
+    for business in businesses:
+        #import pdb; pdb.set_trace()
+        name = business.get('name')
+        rating = business.get('rating')
+        review_count = business.get('review_count')
+        price = business.get('price')
+        location= business.get('location')
+        address = ' '.join(location.get('display_address'))
+        is_closed = business.get('is_closed')
+
+        print('%20s, %10s, %10s, %10s, %60s, %15s' % (name, rating, review_count, price, address, is_closed))
+
+
+
+
 
 
 if __name__ == '__main__':
